@@ -115,7 +115,7 @@ input[type=range]{accent-color:var(--pr)}
 ::selection{background:color-mix(in srgb,var(--pr) 35%,transparent)}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
-<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#4f46e5"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="ذاكر يا محمود"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#4f46e5"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="ذاكر يا محمود"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%235b5cf0'/%3E%3Ctext x='50' y='58' font-size='54' text-anchor='middle' dominant-baseline='middle'%3E🚦%3C/text%3E%3Ctext x='50' y='88' font-size='14' text-anchor='middle' fill='white' font-family='Tajawal,Arial' font-weight='700'%3Eذاكر%3C/text%3E%3C/svg%3E">
 <style id="fxcss">
 /* ===== Pro features ===== */
 main{zoom:var(--zm,1)}
@@ -739,25 +739,87 @@ fill(document);
 })();
 
 </script>
-<style>html,body{overscroll-behavior:none}</style>
+<style>html,body{overscroll-behavior:none}
+#_xdlg{position:fixed;inset:0;z-index:9999;background:rgba(8,9,24,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;animation:fd .22s ease both}
+#_xdlg>div{background:var(--cd);width:100%;max-width:480px;border-radius:28px 28px 0 0;padding:28px 20px calc(24px + env(safe-area-inset-bottom,0px));text-align:center;box-shadow:0 -16px 40px -8px rgba(0,0,0,.4)}
+#_xdlg .xi{font-size:46px;margin-bottom:8px}
+#_xdlg h2{margin:0 0 8px;font-size:20px}
+#_xdlg p{color:var(--mu);margin:0 0 22px;font-size:15px}
+#_xdlg .xrow{display:flex;gap:10px}
+#_xstay{flex:1;background:linear-gradient(135deg,var(--ok),#0d9268)!important;box-shadow:0 8px 20px -6px rgba(16,185,129,.5)!important}
+#_xleave{flex:0 0 auto;padding:14px 16px!important;background:var(--no)!important;box-shadow:0 8px 20px -6px rgba(244,63,94,.45)!important;font-size:15px}
+</style>
 <script>
 /* ===== حماية الخروج والريفريش أثناء الاختبار ===== */
 (function(){
-const act=()=>{try{return !!(ex&&ex.qs&&ex.i<ex.qs.length)}catch(e){return false}};
-let allow=false,last=0;
-window.addEventListener("beforeunload",e=>{if(allow||!act())return;e.preventDefault();e.returnValue=""});
-document.addEventListener("keydown",e=>{if(!act())return;const k=(e.key||"").toLowerCase();if(k==="f5"||((e.ctrlKey||e.metaKey)&&k==="r")){e.preventDefault();toast("⚠️ الريفريش متوقف أثناء الاختبار")}},true);
-const trap=()=>{try{if(!history.state||history.state.g!==1)history.pushState({g:1},"")}catch(e){}};
-trap();setInterval(()=>{if(act())trap()},500);
-window.addEventListener("popstate",()=>{
-if(allow)return;
-if(!act()){history.back();return}
-trap();const n=Date.now();
-if(n-last>3000){last=n;toast("⚠️ تحذير: أنت في اختبار. اضغط رجوع مرة تانية للمغادرة");return}
-last=0;
-if(confirm("⚠️ تحذير: أنت في وسط الاختبار.\nلو غادرت البرنامج هيضيع تقدمك.\n\nهل تؤكد مغادرة البرنامج؟")){allow=true;history.go(-2)}else toast("تم البقاء في الاختبار")});
-const _go=window.go;
-window.go=function(t){if(act()&&!confirm("⚠️ أنت في وسط الاختبار. لو خرجت هيضيع تقدمك.\n\nهل تؤكد الخروج من الاختبار؟"))return;return _go.apply(this,arguments)};
+  const inExam=()=>{try{return !!(ex&&ex.qs&&ex.i<ex.qs.length)}catch(e){return false}};
+  let exitAllowed=false,lastBack=0,dlgOpen=false;
+
+  /* ١ — منع إغلاق/ريفريش الصفحة (ديسكتوب) */
+  window.addEventListener("beforeunload",e=>{if(exitAllowed||!inExam())return;e.preventDefault();e.returnValue=""});
+
+  /* ٢ — منع F5 / Ctrl+R / Cmd+R */
+  document.addEventListener("keydown",e=>{
+    if(!inExam())return;
+    const k=(e.key||"").toLowerCase();
+    if(k==="f5"||((e.ctrlKey||e.metaKey)&&k==="r")){e.preventDefault();toast("⚠️ الريفريش متوقف أثناء الاختبار")}
+  },true);
+
+  /* ٣ — ثبّت موضع السجل (يضمن وجود خطوة للرجوع منها) */
+  const pushTrap=()=>{try{if(!history.state||!history.state._xg)history.pushState({_xg:1},"")}catch(e){}};
+  pushTrap();
+  setInterval(()=>{if(inExam())pushTrap()},400);
+
+  /* ٤ — Dialog مخصص بدل confirm() (يشتغل بشكل صح على الموبايل) */
+  function showExitDialog(onLeave,onStay){
+    if(dlgOpen)return;dlgOpen=true;
+    const old=document.getElementById("_xdlg");if(old)old.remove();
+    const d=document.createElement("div");d.id="_xdlg";
+    d.innerHTML=`<div><div class="xi">⚠️</div>
+      <h2>تحذير: أنت في وسط الاختبار!</h2>
+      <p>لو غادرت البرنامج هيضيع تقدمك الحالي.</p>
+      <div class="xrow">
+        <button id="_xstay">✅ ابقَ في الاختبار</button>
+        <button id="_xleave">🚪 مغادرة</button>
+      </div></div>`;
+    document.body.appendChild(d);
+    const close=(cb)=>{d.remove();dlgOpen=false;cb&&cb()};
+    d.querySelector("#_xstay").onclick=()=>close(onStay);
+    d.querySelector("#_xleave").onclick=()=>close(onLeave);
+    d.onclick=e=>{if(e.target===d)close(onStay)};
+  }
+
+  /* ٥ — ضغطتان متواليتان للرجوع */
+  window.addEventListener("popstate",()=>{
+    if(exitAllowed)return;
+    if(!inExam()){history.back();return}
+    pushTrap();
+    if(dlgOpen)return;
+    const now=Date.now();
+    if(now-lastBack>3000){
+      /* ضغطة أولى → تحذير */
+      lastBack=now;
+      toast("⚠️ تحذير: أنت في اختبار. اضغط رجوع مرة ثانية للمغادرة");
+      if(navigator.vibrate)navigator.vibrate([80,60,80]);
+      return;
+    }
+    /* ضغطة ثانية → Dialog تأكيد */
+    lastBack=0;
+    showExitDialog(
+      ()=>{exitAllowed=true;history.go(-2)},
+      ()=>{toast("✅ تم البقاء في الاختبار")}
+    );
+  });
+
+  /* ٦ — منع الخروج بزر «الأبواب» أثناء الاختبار */
+  const _go=window.go;
+  window.go=function(t){
+    if(!inExam())return _go.apply(this,arguments);
+    showExitDialog(
+      ()=>_go.apply(window,arguments),
+      ()=>{}
+    );
+  };
 })();
 </script>
 </body>
