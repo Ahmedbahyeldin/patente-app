@@ -739,5 +739,26 @@ fill(document);
 })();
 
 </script>
+<style>html,body{overscroll-behavior:none}</style>
+<script>
+/* ===== حماية الخروج والريفريش أثناء الاختبار ===== */
+(function(){
+const act=()=>{try{return !!(ex&&ex.qs&&ex.i<ex.qs.length)}catch(e){return false}};
+let allow=false,last=0;
+window.addEventListener("beforeunload",e=>{if(allow||!act())return;e.preventDefault();e.returnValue=""});
+document.addEventListener("keydown",e=>{if(!act())return;const k=(e.key||"").toLowerCase();if(k==="f5"||((e.ctrlKey||e.metaKey)&&k==="r")){e.preventDefault();toast("⚠️ الريفريش متوقف أثناء الاختبار")}},true);
+const trap=()=>{try{if(!history.state||history.state.g!==1)history.pushState({g:1},"")}catch(e){}};
+trap();setInterval(()=>{if(act())trap()},500);
+window.addEventListener("popstate",()=>{
+if(allow)return;
+if(!act()){history.back();return}
+trap();const n=Date.now();
+if(n-last>3000){last=n;toast("⚠️ تحذير: أنت في اختبار. اضغط رجوع مرة تانية للمغادرة");return}
+last=0;
+if(confirm("⚠️ تحذير: أنت في وسط الاختبار.\nلو غادرت البرنامج هيضيع تقدمك.\n\nهل تؤكد مغادرة البرنامج؟")){allow=true;history.go(-2)}else toast("تم البقاء في الاختبار")});
+const _go=window.go;
+window.go=function(t){if(act()&&!confirm("⚠️ أنت في وسط الاختبار. لو خرجت هيضيع تقدمك.\n\nهل تؤكد الخروج من الاختبار؟"))return;return _go.apply(this,arguments)};
+})();
+</script>
 </body>
 </html>
